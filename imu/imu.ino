@@ -9,7 +9,8 @@ void setup(){
 }
 
 void loop(){
-  Serial.println( readMag() );  
+  Serial.println( readMag() );
+//  delay(1000);
 }
 
 void startMag(){
@@ -64,6 +65,6 @@ String readMag(){
     z = Wire.read()<<8;
     z |= Wire.read();
   }
-  String result = String('X'+x+', '+'Y'+y+', '+'Z'+z);
+  String result = String("X: ")+x+String(", Y: ")+y+String(", Z: ")+z;
   return result;
 }
