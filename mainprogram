@@ -1,0 +1,84 @@
+import os
+import time
+import readadc
+import adccalibration1 as adccal
+import adc3 as adc
+import adc4 as adc2
+from array import *
+from datetime import datetime
+import multiprocessing
+import RPi.GPIO as GPIO
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+GPIO.setup(17, GPIO.OUT)
+
+def timerinput():
+	countdown = input('Set timer (in minutes) to? ')
+	print "Timer set to (minutes): "
+	print str(countdown) + "\n"
+	check = raw_input('Is this correct? (y/n)')
+	if check.lower() == 'y' or 'Y':
+		countdownsec = countdown*60
+		return countdownsec
+	
+	elif check.lower() == 'n' or 'N':
+		return timerinput()
+	else:
+		print "Incorrect input"
+		return timerinput()
+
+#initialize timer variables
+ct = timerinput() #takes inputted time (in seconds) for countdown
+ut = ct - 15 #sets up 10 second delay before sensor reading
+caltstart = ct - 3
+caltfin = ct - 13
+#initialize ADC terms
+a = adc.ADC()
+b = adc2.ADC()
+c = adccal.ADC()
+num_chan = 5
+terminate = 0 #dummy variable
+
+
+			
+if __name__ == "__main__":
+	p1 = multiprocessing.Process(target=a.adcread, args=(num_chan, terminate))
+	p2 = multiprocessing.Process(target=b.adcread, args=(num_chan, terminate))
+	#p4 = multiprocessing.Process(target=ORIENTATIONSYSTEMPROGRAM, args=(X, Y))
+		#These lines will be uncommented when we have both ADCs and orientation breakout board in
+	p3 = multiprocessing.Process(target=c.adcread, args=(num_chan, terminate))
+
+	#System Counter for controlling processes and shutdown
+	while ct != -1:
+		GPIO.output(17, GPIO.HIGH)
+		print "Control signal set high, control FET gated off (Cap discharging)"
+		print "Seconds left: " + str(ct)
+		time.sleep(1.1)
+		ct = ct - 1
+		if ct == caltstart:
+			p3.start()
+		if ct == caltfin:
+			p3.terminate()
+		if ct == ut:
+			p1.start()
+			p2.start()
+		if ct == 0:
+			p1.terminate()
+			p2.terminate()
+ 
+	#jobs.append(p1)
+	#jobs.append(p2)
+	p1.join()
+	p2.join()
+	p3.join()
+
+	
+	#Shutdown sequence
+	GPIO.output(17, GPIO.LOW) #Logic low sets contrrl FET to turn on
+	print "Control FET gated on, cap charging, shutdown imminent"
+	time.sleep(5)
+	print "This concludes Project Icarus"
+	time.sleep(5)
+	print "Shutdown would occur here"
+	#os.system("sudo shutdown -h now")
