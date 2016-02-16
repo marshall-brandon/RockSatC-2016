@@ -1,0 +1,87 @@
+import os
+import time
+import readadc
+from datetime import datetime
+from array import *
+
+class ADC:
+#the main sensor reading 
+	def sensor(self, pin):
+		sensor_data = readadc.readadc(
+			pin, 
+			readadc.PINS.SPICLK,
+			readadc.PINS.SPIMOSI,
+			readadc.PINS.SPIMISO,
+			readadc.PINS.SPICS
+    		)
+    		return sensor_data
+	def __init__(self):
+	
+		#set ADC to initially read from pin 0 (Sensor1) of mcp3008
+		self.sensor_pin = 0
+		readadc.initialize()
+        	self.t = 0
+		#Initialize list, initializes to 0 in each index
+		self.list = [0,0,0,0,0,0]
+
+		#Initialize iteration counter (prototyping purposes)
+		self.iteration = 0
+
+
+                #Open .csv file for log recording
+		self.f = open("log.csv", "w")
+		self.f.write(
+			'Iteration,' + 
+			'Sensor 1,Sensor 2,Sensor 3,Sensor 4,Sensor 5,Sensor 6,' +
+			'Run Time (Seconds),' +
+			'System Time (H M S uS)\n'
+		)
+
+	def adcread(self,t, terminate):
+                while terminate != 1:
+                        os.system('clear')
+                        #clears previous values from screen (print function) to keep display tidy
+            
+                        #for loop to iterate through all 6 channels and record current voltage reading
+                        for t in range(len(self.list)):
+                                self.sensor_pin = t	
+                                sensor_data = self.sensor(self.sensor_pin)	
+                                millivolts = sensor_data * (3300.0 / 1024.0) #Vref/1024 (2^10) establishes ~3.3mV resolution per bit
+                                millivolts = "%.2f" % millivolts #Eliminates all values after one decimel place 
+                                self.list[t] = millivolts
+  
+
+                        self.iteration = self.iteration + 1
+                        minutes = (self.iteration/4)/60
+                        seconds = (self.iteration/4)%60
+                        runtime = float(self.iteration)/4 + .048 
+                        #.048 added for time required to run lines in program
+                        runtime = "%.3f" % runtime
+                        self.f.write(
+                                str(self.iteration) + ',' +
+                                self.list[0] + ',' + 
+                                self.list[1] + ',' +
+                                self.list[2] + ',' +
+                                self.list[3] + ',' +
+                                self.list[4] + ',' +
+                                self.list[5] + ',' +
+                                str(runtime) + ',' +
+                                str(datetime.now().time())
+                        )
+                        self.f.write('\n')
+
+                        print "Sensor 1 Voltage: " + str(self.list[0]) + " mV" 
+                        print "Sensor 2 Voltage: " + str(self.list[1]) + " mV"
+                        print "Sensor 3 Voltage: " + str(self.list[2]) + " mV"
+                        print "Sensor 4 Voltage: " + str(self.list[3]) + " mV"	
+                        print "Sensor 5 Voltage: " + str(self.list[4]) + " mV"
+                        print "Sensor 6 Voltage: " + str(self.list[5]) + " mV"
+    
+                        #Printing of number of iterations and total time for prototyping purposes
+                        print "Iterations: " + str(self.iteration)
+                        print "\nTime: " + str(minutes) + ":%.2d" %seconds
+
+                        time.sleep(.25)
+
+    
+                
